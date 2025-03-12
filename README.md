@@ -40,4 +40,4 @@ No installation required! Just run the command and interact with the card.
 
 - **GitHub**: [github.com/1vcian](https://github.com/1vcian)
 - **LinkedIn**: [linkedin.com/in/lume](https://linkedin.com/in/lume)
-- **Email**: [lohitkolluri@gmail.com](mailto:medrihanlucian@gmail.com)
+- **Email**: [medrihanlucian@gmail.com](mailto:medrihanlucian@gmail.com)
