@@ -1,205 +1,141 @@
 #!/usr/bin/env node
+// A business card for the terminal: `npx 1vcian`.
+// To make it yours, edit lib/profile.js.
 
-import boxen from 'boxen';
-import chalk from 'chalk';
-import inquirer from 'inquirer';
-import { createSpinner } from 'nanospinner';
-import gradient from 'gradient-string';
-import figlet from 'figlet';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import openURL from 'open';
-import { setTimeout as sleep } from 'timers/promises';
+import { readFileSync } from "node:fs";
+import { profile } from "./lib/profile.js";
+import { OUTER, cardLines, compactLines, isKonami, KONAMI, menuLines } from "./lib/render.js";
+import { MIN_COLUMNS, MIN_ROWS, playGame } from "./lib/game.js";
+import { clip, createKeyboard, detect, openUrl, s, sleep, toAnsi } from "./lib/term.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+const out = process.stdout;
+const argv = process.argv.slice(2);
+const has = (...names) => names.some((name) => argv.includes(name));
+const seedAt = argv.indexOf("--seed");
+const seed = seedAt >= 0 && /^\d+$/.test(argv[seedAt + 1] ?? "") ? Number(argv[seedAt + 1]) : undefined;
 
+const FLAGS = ["--static", "--json", "--plain", "--ascii", "--play", "--seed", "--help", "-h", "--version", "-v"];
+const unknown = argv.find((arg, i) => !FLAGS.includes(arg) && !(i === seedAt + 1 && seedAt >= 0));
 
-const CONFIG = {
-  PERSONAL_INFO: {
-    NAME: 'Lucian Medrihan',
-    TITLE: 'Full Stack Developer',
-    EDUCATION: 'Sapienza Università di Roma, Computer and Automation Engineering',
-    SKILLS: ['DevOps', 'Web Development', 'Cyber Security', 'Machine Learning'],
-  },
-  URLS: {
-    EMAIL: 'mailto:medrihanlucian@gmail.com',
-    PORTFOLIO: 'https://1vcian.github.io/Portfolio/',
-    GITHUB: 'https://github.com/1vcian/',
-    LINKEDIN: 'https://linkedin.com/in/lume',
-  },
-  THEME: {
-    BORDER_COLOR: 'yellow',
-    BG_COLOR: '#1a1a1a',
-    ANIMATION_SPEED: {
-      FAST: 10,
-      MEDIUM: 30,
-      SLOW: 50,
-    },
-  },
-};
+const help = `${pkg.name}: ${profile.name}'s business card, for the terminal
 
-// Utility functions
-const createAnimatedSpinner = async (text, duration = 500) => {
-  const spinner = createSpinner(text).start();
-  await sleep(duration);
-  return spinner;
-};
+  npx ${pkg.name}             the card, with a menu
+  npx ${pkg.name} --static    just the card
+  npx ${pkg.name} --json      the same facts, for scripts
+  npx ${pkg.name} --plain     no colours
+  npx ${pkg.name} --ascii     no fancy characters
+  npx ${pkg.name} --version
 
-const animateText = async (text, speed = CONFIG.THEME.ANIMATION_SPEED.FAST) => {
-  process.stdout.write('\n');
-  for (const char of text) {
-    process.stdout.write(char);
-    await sleep(speed);
-  }
-  process.stdout.write('\n');
-};
+There is a game hidden in here. The card tells you how to find it.
+`;
 
-// Component for welcome banner
-const WelcomeBanner = async () => {
-  console.clear();
-  console.log('\n');
-  const spinner = await createAnimatedSpinner('Initializing...', 300);
-  spinner.success();
-  
-  return new Promise((resolve) => {
-    figlet(CONFIG.PERSONAL_INFO.NAME, {
-      font: 'Big',
-      horizontalLayout: 'default',
-      verticalLayout: 'default',
-    }, async (err, data) => {
-      if (!err) {
-        const lines = data.split('\n');
-        for (const line of lines) {
-          console.log(gradient.rainbow(line));
-          await sleep(CONFIG.THEME.ANIMATION_SPEED.MEDIUM);
-        }
-        await animateText(
-          `{ ${CONFIG.PERSONAL_INFO.TITLE} }`,
-          CONFIG.THEME.ANIMATION_SPEED.SLOW
-        );
-      }
-      resolve();
-    });
-  });
-};
+const card = (cap) => (cap.columns >= OUTER + 2 ? cardLines(profile, cap, { tight: cap.tty && cap.rows < 24 }) : compactLines(profile, cap));
+// On a terminal a line is cut at the window's edge: one that wraps would break redrawing.
+const show = (line, cap) => toAnsi(cap.tty ? clip(line, cap.columns - 1) : line, cap);
 
-// Component for profile card
-const ProfileCard = async () => {
-  const cardData = {
-    name: gradient.pastel(CONFIG.PERSONAL_INFO.NAME),
-    title: chalk.white(CONFIG.PERSONAL_INFO.TITLE),
-    education: `${chalk.white('Graduated At')} ${gradient.morning(CONFIG.PERSONAL_INFO.EDUCATION)}`,
-    github: `${chalk.white('{')} ${chalk.gray('github.com/')}${chalk.green('1vcian')} ${chalk.white('}')}`,
-    linkedin: `${chalk.white('{')} ${chalk.gray('linkedin.com/in/')}${chalk.blue('lume')} ${chalk.white('}')}`,
-    web: `${chalk.white('{')} ${chalk.cyan(CONFIG.URLS.PORTFOLIO)} ${chalk.white('}')}`,
-    npx: `${chalk.red('npx')} ${chalk.white('1vcian')}`,
-    skills: gradient.cristal(CONFIG.PERSONAL_INFO.SKILLS.join(' | ')),
+async function menu(cap) {
+  const keyboard = createKeyboard();
+  const recent = [];
+  let selected = 0;
+  let note;
+  let drawn = 0;
+  let busy = false;
+  const wide = cap.columns >= OUTER + 2;
+
+  const paint = () => {
+    const lines = menuLines(profile.actions, selected, cap, note);
+    if (drawn > 1) out.write(`\x1b[${drawn - 1}A`);
+    out.write(`\r${lines.map((line) => `\x1b[2K${show(line, cap)}`).join("\n")}`);
+    drawn = lines.length;
   };
 
-  const card = boxen(
-    [
-      cardData.name,
-      cardData.title,
-      '',
-      `🎓 ${cardData.education}`,
-      '',
-      `⚡ Skills: ${cardData.skills}`,
-      '',
-      `📦 GitHub:    ${cardData.github}`,
-      `💼 LinkedIn:  ${cardData.linkedin}`,
-      `🌐 Website:   ${cardData.web}`,
-      '',
-      `📇 Card:      ${cardData.npx}`,
-      '',
-      gradient.passion('🚀 Available for exciting opportunities and collaborations!'),
-      gradient.cristal('💭 Let\'s connect and create something amazing together!'),
-    ].join('\n'),
-    {
-      padding: 1,
-      margin: 1,
-      borderStyle: 'round',
-      borderColor: CONFIG.THEME.BORDER_COLOR,
-      float: 'center',
-      backgroundColor: CONFIG.THEME.BG_COLOR,
-      title: chalk.green.bold('Lucian\'s Business Card'),
-      titleAlignment: 'center',
+  const quit = () => {
+    // the menu makes way for the goodbye; the card stays in the scrollback
+    if (drawn > 1) out.write(`\x1b[${drawn - 1}A`);
+    out.write(`\r\x1b[J${show([s(wide ? "  " : ""), s(profile.bye, { c: "amber", b: true })], cap)}\n\n`);
+    keyboard.close();
+  };
+
+  const play = async () => {
+    busy = true;
+    const result = await playGame({ keyboard, cap: detect(argv), out, seed, back: "back to the card", contact: profile.contact });
+    busy = false;
+    if (result.abort) return quit();
+    if (result.tooSmall) note = [s(`Too small for the game: needs ${MIN_COLUMNS} x ${MIN_ROWS}`, { c: "red" })];
+    else note = [s(result.best ? `Welcome back. Best run: ${result.best} km.` : "Welcome back.", { c: "green" })];
+    paint();
+  };
+
+  keyboard.push((key) => {
+    if (busy) return;
+    recent.push(key);
+    if (recent.length > KONAMI.length) recent.shift();
+    if (isKonami(recent)) {
+      recent.length = 0;
+      return play();
     }
-  );
 
-  for (const line of card.split('\n')) {
-    console.log(line);
-    await sleep(CONFIG.THEME.ANIMATION_SPEED.FAST);
+    const count = profile.actions.length;
+    if (key === "up" || key === "k") selected = (selected + count - 1) % count;
+    else if (key === "down" || key === "j" || key === "tab") selected = (selected + 1) % count;
+    else if (key === "return" || key === "space") {
+      const { url } = profile.actions[selected];
+      openUrl(url);
+      // the address is always shown: on a server there is no browser to open
+      note = [s("Opening ", { c: "green" }), s(url.replace(/^mailto:/, ""), { c: "blue", link: url })];
+    } else if (key === "q" || key === "escape" || key === "ctrl-c") return quit();
+    else return;
+    paint();
+  });
+
+  paint();
+}
+
+async function main() {
+  if (unknown) {
+    process.stderr.write(`Unknown option: ${unknown}\n\n${help}`);
+    process.exitCode = 1;
+    return;
   }
-};
+  if (has("--help", "-h")) return void out.write(help);
+  if (has("--version", "-v")) return void out.write(`${pkg.version}\n`);
+  if (has("--json")) {
+    const { name, title, place, pitch, facts, building } = profile;
+    const links = Object.fromEntries(facts.map(([label, shown, link]) => [label, link || shown]));
+    return void out.write(`${JSON.stringify({ name, title, place, pitch, links, building, card: `npx ${pkg.name}` }, null, 2)}\n`);
+  }
 
-// Action handlers
-const actionHandlers = {
-  email: async () => {
-    const spinner = await createAnimatedSpinner('Opening mail client...');
-    await openURL(CONFIG.URLS.EMAIL);
-    spinner.success({ text: gradient.passion('📧 Email client opened!') });
-    await animateText(chalk.green('Looking forward to hearing from you!'));
-  },
+  const cap = detect(argv);
+  const interactive = cap.tty && Boolean(process.stdin.isTTY) && !has("--static");
 
-
-  viewPortfolio: async () => {
-    const spinner = await createAnimatedSpinner('Loading portfolio...');
-    await openURL(CONFIG.URLS.PORTFOLIO);
-    spinner.success({ text: gradient.teen('🌐 Portfolio opened!') });
-    await animateText(chalk.green('Hope you enjoy exploring my work!'));
-  },
-
-  viewGitHub: async () => {
-    const spinner = await createAnimatedSpinner('Opening GitHub...');
-    await openURL(CONFIG.URLS.GITHUB);
-    spinner.success({ text: gradient.atlas('💻 GitHub profile opened!') });
-    await animateText(chalk.green('Check out my latest projects!'));
-  },
-};
-
-// Menu options
-const menuOptions = [
-  {
-    type: 'list',
-    name: 'action',
-    message: gradient.cristal('What would you like to do?'),
-    choices: [
-      { name: `📧  ${gradient.passion('Send an Email')}`, value: 'email' },
-      { name: `🌐  ${gradient.teen('Visit Portfolio')}`, value: 'viewPortfolio' },
-      { name: `💻  ${gradient.atlas('View GitHub')}`, value: 'viewGitHub' },
-      { name: gradient.rainbow('🚪  Exit'), value: 'quit' },
-    ],
-  },
-];
-
-// Main application
-const main = async () => {
-  try {
-    await WelcomeBanner();
-    await ProfileCard();
-    
-    console.log(
-      gradient.passion('\n💡 Tip: Use ') + 
-      chalk.cyan('cmd/ctrl + click') + 
-      gradient.passion(' on links to open directly.\n')
-    );
-
-    while (true) {
-      const { action } = await inquirer.prompt(menuOptions);
-      
-      if (action === 'quit') {
-        await animateText(gradient.rainbow('\n👋 Thanks for stopping by! Have a great day!\n'));
-        break;
-      }
-      
-      await actionHandlers[action]();
+  if (has("--play")) {
+    if (!interactive) {
+      process.stderr.write("The game needs a real terminal.\n");
+      process.exitCode = 1;
+      return;
     }
-  } catch (error) {
-    console.error(chalk.red('\n❌ An error occurred:'), error.message);
-    process.exit(1);
+    process.on("exit", () => out.write("\x1b[?25h"));
+    const keyboard = createKeyboard();
+    const result = await playGame({ keyboard, cap, out, seed, contact: profile.contact });
+    keyboard.close();
+    if (result.tooSmall) out.write(`The game needs a window of at least ${MIN_COLUMNS} by ${MIN_ROWS}.\n`);
+    return;
   }
-};
 
-// Run the application
-main().catch(console.error);
+  if (!interactive) return void out.write(`${card(cap).map((line) => show(line, cap)).join("\n")}\n`);
+
+  // hide the cursor while the menu is up, and always give it back
+  out.write("\x1b[?25l");
+  process.on("exit", () => out.write("\x1b[?25h"));
+
+  if (cap.rows > 24) out.write("\n");
+  for (const line of card(cap)) {
+    out.write(`${show(line, cap)}\n`);
+    await sleep(14);
+  }
+  out.write("\n");
+  await menu(cap);
+}
+
+main();

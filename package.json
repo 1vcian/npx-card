@@ -1,52 +1,40 @@
 {
   "name": "1vcian",
-  "version": "3.1.1",
-  "description": "A personal card for Lucian Medrihan",
-  "main": "card.js",
+  "version": "4.0.0",
+  "description": "Lucian Medrihan's business card for the terminal: npx 1vcian. No dependencies, one hidden game.",
+  "type": "module",
   "bin": {
-    "lohitkolluri": "card.js"
+    "1vcian": "card.js"
+  },
+  "files": [
+    "card.js",
+    "lib"
+  ],
+  "scripts": {
+    "start": "node card.js",
+    "test": "node --test",
+    "preview": "node scripts/preview.mjs"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/1vcian"
+    "url": "git+https://github.com/1vcian/npx-card.git"
   },
-  "homepage": "https://github.com/1vcian",
+  "homepage": "https://1vcian.me",
   "bugs": {
-    "url": "https://github.com/1vcian"
-  },
-  "scripts": {
-    "test": "jest",
-    "pub": "npm version patch && npm publish"
-  },
-  "type": "module",
-  "dependencies": {
-    "axios": "^1.7.9",
-    "boxen": "^8.0.1",
-    "chalk": "^5.4.0",
-    "clear": "^0.1.0",
-    "cli-spinners": "^2.9.2",
-    "figlet": "^1.8.0",
-    "gradient-string": "^3.0.0",
-    "inquirer": "^12.2.0",
-    "nanospinner": "^1.2.2",
-    "open": "^7.4.2",
-    "ora": "^5.4.1",
-    "uuid": "^10.0.0"
-  },
-  "devDependencies": {
-    "jest": "^29.0.0"
+    "url": "https://github.com/1vcian/npx-card/issues"
   },
   "keywords": [
-    "card",
-    "npm",
-    "npm card",
     "npx",
     "npx card",
-    "business card"
+    "business card",
+    "cli",
+    "terminal",
+    "ascii game",
+    "easter egg"
   ],
-  "author": "Lucian Medrihan <medrihanlucian@gmail.com> (https://github.com/1vcian/)",
+  "author": "Lucian Medrihan <medrihanlucian@gmail.com> (https://1vcian.me)",
   "license": "MIT",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18"
   }
 }
