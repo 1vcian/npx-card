@@ -1,7 +1,7 @@
 {
   "name": "1vcian",
-  "version": "4.0.0",
-  "description": "Lucian Medrihan's business card for the terminal: npx 1vcian. No dependencies, one hidden game.",
+  "version": "4.1.0",
+  "description": "Lucian Medrihan's business card for the terminal: npx 1vcian. No dependencies, a menu, a game.",
   "type": "module",
   "bin": {
     "1vcian": "card.js"
@@ -30,7 +30,7 @@
     "cli",
     "terminal",
     "ascii game",
-    "easter egg"
+    "game"
   ],
   "author": "Lucian Medrihan <medrihanlucian@gmail.com> (https://1vcian.me)",
   "license": "MIT",

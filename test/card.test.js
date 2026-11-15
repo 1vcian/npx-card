@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { LANES, PACKET_POINTS, SHIP, SHIP_X, delay, frame, move, newGame, step, verdict } from "../lib/game.js";
 import { profile } from "../lib/profile.js";
-import { KONAMI, OUTER, cardLines, compactLines, isKonami, menuLines, wrap } from "../lib/render.js";
+import { KONAMI, OUTER, cardLines, compactLines, isKonami, liveCard, menuLines, moveSelection, projectLines, wipe, wrap } from "../lib/render.js";
 import { clip, lineWidth, toAnsi } from "../lib/term.js";
 import { fly } from "../scripts/pilot.js";
 
@@ -30,7 +30,7 @@ test("the boxed card is a clean rectangle that fits 80 columns", () => {
 });
 
 test("the plain version uses nothing but ASCII", () => {
-  const lines = [...cardLines(profile, plain), ...compactLines(profile, plain), ...menuLines(profile.actions, 0, plain)];
+  const lines = [...cardLines(profile, plain), ...compactLines(profile, plain), ...menuLines(profile.actions, 0, plain), ...projectLines(profile.projects, 0, plain)];
   for (const line of lines) assert.ok(isAscii(toAnsi(line, plain)), toAnsi(line, plain));
   for (const phase of ["ready", "run", "over"]) {
     for (const line of frame(newGame(1), plain, { phase })) assert.ok(isAscii(toAnsi(line, plain)));
@@ -42,12 +42,47 @@ test("the compact card fits a narrow window", () => {
   for (const line of compactLines(profile, cap)) assert.ok(lineWidth(line) <= 40, toAnsi(line, plain));
 });
 
-test("the menu marks one row and ends with the hint", () => {
-  const lines = menuLines(profile.actions, 2, fancy).map((line) => toAnsi(line, plain));
-  assert.equal(lines.length, profile.actions.length + 2);
-  assert.equal(lines.filter((line) => line.includes("❯")).length, 1);
-  assert.match(lines[3], /❯/);
-  assert.match(lines.at(-1), /psst/);
+test("the menu has two columns, one entry marked, and a line about it underneath", () => {
+  const text = (lines) => lines.map((line) => toAnsi(line, { ...plain, unicode: true }));
+  const lines = text(menuLines(profile.actions, 6, fancy));
+  assert.equal(lines.length, Math.ceil(profile.actions.length / 2) + 2);
+  assert.equal(lines.join("\n").split("❯").length - 1, 1);
+  assert.match(lines[3], /❯ Play ORBIT RUN/);
+  assert.ok(lines.at(-1).includes(profile.actions[6].hint));
+  for (const line of menuLines(profile.actions, 0, fancy)) assert.ok(lineWidth(line) <= 80);
+
+  const narrow = text(menuLines(profile.actions, 0, { ...fancy, columns: 40 }));
+  assert.equal(narrow.length, profile.actions.length + 2, "one column when the window is narrow");
+});
+
+test("arrows move around the two columns", () => {
+  const count = 8; // 0-3 on the left, 4-7 on the right
+  assert.equal(moveSelection(0, "down", count), 1);
+  assert.equal(moveSelection(3, "down", count), 0);
+  assert.equal(moveSelection(0, "up", count), 3);
+  assert.equal(moveSelection(1, "right", count), 5);
+  assert.equal(moveSelection(5, "left", count), 1);
+  assert.equal(moveSelection(7, "down", count), 4);
+  assert.equal(moveSelection(7, "tab", count), 0);
+  assert.equal(moveSelection(3, "right", 7), 6, "an odd menu has a shorter right column");
+  assert.equal(moveSelection(2, "x", count), 2);
+});
+
+test("the list of projects fits the card and shows where the selected one lives", () => {
+  const lines = projectLines(profile.projects, 2, fancy);
+  assert.equal(lines.length, profile.projects.length + 2);
+  for (const line of lines) assert.ok(lineWidth(line) <= OUTER + 2, toAnsi(line, plain));
+  assert.ok(toAnsi(lines.at(-1), plain).includes("im.center"));
+});
+
+test("the animations never change the shape of the card", () => {
+  const base = cardLines(profile, fancy);
+  const widths = base.map(lineWidth);
+  for (const tick of [1, 17, 64, 65, 200, 1000]) assert.deepEqual(liveCard(base, tick).map(lineWidth), widths);
+  for (const shown of [0, 30, 200]) assert.deepEqual(wipe(base, shown).map(lineWidth), widths);
+  assert.equal(wipe(base, 0).map((line) => toAnsi(line, plain)).join("").trim(), "", "nothing shows before the wipe starts");
+  assert.equal(wipe(base, 200).map((line) => toAnsi(line, plain)).join("\n"), base.map((line) => toAnsi(line, plain)).join("\n"));
+  assert.notEqual(liveCard(base, 5).map((line) => toAnsi(line, fancy)).join(""), base.map((line) => toAnsi(line, fancy)).join(""), "the comet is on the frame");
 });
 
 test("links are clickable where the terminal allows, plain text elsewhere", () => {
@@ -84,10 +119,10 @@ test("--json gives the facts to scripts", () => {
   assert.equal(data.links.web, "https://1vcian.me");
 });
 
-test("--version matches package.json, --help mentions the game", () => {
+test("--version matches package.json, --help lists the game", () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
   assert.equal(run("--version").trim(), pkg.version);
-  assert.match(run("--help"), /game hidden/);
+  assert.match(run("--help"), /--play\s+straight to the game/);
 });
 
 test("an unknown option fails with the help", () => {

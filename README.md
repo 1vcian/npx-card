@@ -15,36 +15,32 @@ It makes no network requests either. A link opens only when you pick it.
 
 ## What's in it
 
-- **The card.** Who I am, what I'm making, where to find me. Links are clickable in terminals that support it.
-- **A menu.** Website, email, résumé, GitHub, LinkedIn: arrows and enter.
-- **Good manners.** Colours adapt to the terminal (true colour, 256, 16, or none), `NO_COLOR` is respected, piped output is plain text, narrow windows get a compact layout.
-- **A game.** Hidden. The card tells you where to look.
+- **The card.** Who I am, what I'm making, where to find me. It wipes in, a comet keeps running around its frame and the logo catches the light now and then.
+- **A menu.** Website, résumé, GitHub, LinkedIn, and an email entry that also copies the address. Move with the arrows, choose with enter.
+- **My projects.** A list you can browse without leaving the terminal; enter opens the one you picked.
+- **A game.** ORBIT RUN, right there in the menu.
+- **Good manners.** Colours adapt to the terminal (true colour, 256, 16, or none), `NO_COLOR` is respected, piped output is plain text, narrow windows get a compact layout, and `--still` turns the animations off.
 
-<details>
-<summary>Spoiler: the game</summary>
-
-<br>
-
-On the menu, type the Konami code: <kbd>↑</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>b</kbd> <kbd>a</kbd>. Or skip the ceremony with `npx 1vcian --play`.
+## The game
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/1vcian/npx-card/main/game.svg" alt="ORBIT RUN: a satellite dodging debris along seven orbit lanes" width="640">
 </p>
 
-**ORBIT RUN.** You fly a satellite along seven orbit lanes. Debris comes in waves, every packet `+` you catch is worth 25 km, and the whole thing speeds up as you go.
+**ORBIT RUN.** You fly a satellite along seven orbit lanes. Debris comes in waves, every packet `+` you catch is worth 25 km, and the whole thing speeds up as you go. Pick it from the menu, or go straight in with `npx 1vcian --play`.
 
 It is fair: every wave leaves at least two lanes open, and one of them is never more than one step away from a lane the previous wave left open. There is a test for that, and an autopilot that flies 5,000 ticks at full speed without a scratch.
 
-`--seed 42` gives you the same debris field every time, if you want to race a friend.
-
-</details>
+`--seed 42` gives you the same debris field every time, if you want to race a friend. And if you know the Konami code, the menu knows it too.
 
 ## Options
 
 | command | what you get |
 | --- | --- |
 | `npx 1vcian` | the card, with the menu |
+| `npx 1vcian --play` | straight to the game |
 | `npx 1vcian --static` | the card and nothing else |
+| `npx 1vcian --still` | the menu, without the animations |
 | `npx 1vcian --json` | the same facts, for scripts |
 | `npx 1vcian --plain` | no colours |
 | `npx 1vcian --ascii` | no box-drawing or block characters |
@@ -57,7 +53,7 @@ Needs Node.js 18 or newer.
 It is MIT licensed and everything personal sits in one file, so take it.
 
 1. Fork or clone this repo.
-2. Edit [`lib/profile.js`](lib/profile.js): name, links, menu, even the logo.
+2. Edit [`lib/profile.js`](lib/profile.js): name, links, menu, projects, even the logo.
 3. In `package.json`, change `name` (it is what people will type after `npx`), `bin`, `author` and the URLs, and reset `version`.
 4. Try it with `node card.js`, check it with `npm test`.
 5. Redraw the pictures in this README with `npm run preview`.
@@ -67,10 +63,10 @@ It is MIT licensed and everything personal sits in one file, so take it.
 
 | file | what it does |
 | --- | --- |
-| [`card.js`](card.js) | the command: options, the menu, the way into the game |
+| [`card.js`](card.js) | the command: options, the menu, the list of projects, the way into the game |
 | [`lib/profile.js`](lib/profile.js) | the content |
-| [`lib/render.js`](lib/render.js) | lays out the card and the menu |
-| [`lib/term.js`](lib/term.js) | what the terminal can do: colour depth, the box, keys, opening links |
+| [`lib/render.js`](lib/render.js) | lays out the card and the menu, and animates them |
+| [`lib/term.js`](lib/term.js) | what the terminal can do: colour depth, the box, keys, links, the clipboard |
 | [`lib/game.js`](lib/game.js) | the game: the rules as plain functions, then the part that draws them |
 | [`scripts/preview.mjs`](scripts/preview.mjs) | turns the real output into the SVG pictures above |
 | [`test/`](test) | `node --test`, no test framework either |

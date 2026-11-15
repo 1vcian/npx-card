@@ -7,7 +7,7 @@
 import { writeFileSync } from "node:fs";
 import { frame, newGame } from "../lib/game.js";
 import { profile } from "../lib/profile.js";
-import { cardLines, menuLines } from "../lib/render.js";
+import { cardLines, liveCard, menuLines } from "../lib/render.js";
 import { PALETTE, s } from "../lib/term.js";
 import { fly } from "./pilot.js";
 
@@ -111,7 +111,7 @@ ${draw(lines)}
 const prompt = (command) => [s("$ ", { c: "gray" }), s(command, { c: "cream", b: true })];
 
 // 1. the card, as it looks right after `npx 1vcian`
-const cardPicture = terminal([prompt("npx 1vcian"), [], ...cardLines(profile, cap), [], ...menuLines(profile.actions, 0, cap)], {
+const cardPicture = terminal([prompt("npx 1vcian"), [], ...liveCard(cardLines(profile, cap), 21), [], ...menuLines(profile.actions, 0, cap)], {
   title: "npx 1vcian",
   label: `${profile.name}'s business card in a terminal, with a menu under it`,
 });
