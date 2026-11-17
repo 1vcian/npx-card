@@ -7,7 +7,7 @@ npx 1vcian
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/1vcian/npx-card/main/preview.svg" alt="The card in a terminal: name, links, what I'm making, and a menu underneath" width="760">
+  <img src="https://raw.githubusercontent.com/1vcian/npx-card/main/preview.svg" alt="The card in a terminal: name, links, and a menu underneath" width="760">
 </p>
 
 Nothing to install, and nothing to download but the card itself: it has **zero dependencies**.
@@ -15,7 +15,7 @@ It makes no network requests either. A link opens only when you pick it.
 
 ## What's in it
 
-- **The card.** Who I am, what I'm making, where to find me. It wipes in, a comet keeps running around its frame and the logo catches the light now and then.
+- **The card.** Who I am and where to find me. It wipes in, a comet keeps running around its frame and the logo catches the light now and then.
 - **A menu.** Website, projects, résumé, GitHub, LinkedIn, and an email entry that also copies the address. Move with the arrows, choose with enter.
 - **A game.** ORBIT RUN, right there in the menu.
 - **Good manners.** Colours adapt to the terminal (true colour, 256, 16, or none), `NO_COLOR` is respected, piped output is plain text, narrow windows get a compact layout, and `--still` turns the animations off.

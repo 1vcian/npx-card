@@ -148,9 +148,9 @@ async function main() {
   if (has("--help", "-h")) return void out.write(help);
   if (has("--version", "-v")) return void out.write(`${pkg.version}\n`);
   if (has("--json")) {
-    const { name, title, place, pitch, facts, building } = profile;
+    const { name, title, place, pitch, facts } = profile;
     const links = Object.fromEntries(facts.map(([label, shown, link]) => [label, link || shown]));
-    return void out.write(`${JSON.stringify({ name, title, place, pitch, links, building, card: `npx ${pkg.name}` }, null, 2)}\n`);
+    return void out.write(`${JSON.stringify({ name, title, place, pitch, links, card: `npx ${pkg.name}` }, null, 2)}\n`);
   }
 
   const cap = detect(argv);
