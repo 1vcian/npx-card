@@ -4,7 +4,7 @@
 
 import { readFileSync } from "node:fs";
 import { profile } from "./lib/profile.js";
-import { KONAMI, OUTER, cardLines, compactLines, isKonami, liveCard, menuLines, moveSelection, projectLines, wipe } from "./lib/render.js";
+import { KONAMI, OUTER, cardLines, compactLines, isKonami, liveCard, menuLines, moveSelection, wipe } from "./lib/render.js";
 import { MIN_COLUMNS, MIN_ROWS, playGame } from "./lib/game.js";
 import { clip, copyText, createKeyboard, detect, openUrl, s, sleep, toAnsi } from "./lib/term.js";
 
@@ -42,7 +42,7 @@ const show = (line, cap) => toAnsi(cap.tty ? clip(line, cap.columns - 1) : line,
 async function app(cap) {
   const base = card(cap);
   const wide = isBoxed(cap);
-  const tallest = Math.max(menuLines(profile.actions, 0, cap).length, projectLines(profile.projects, 0, cap).length);
+  const tallest = menuLines(profile.actions, 0, cap).length;
   // The animations redraw lines above the cursor, so the whole card has to be on screen.
   const fits = () => cap.rows >= base.length + 1 + tallest;
   const lively = wide && cap.color && !has("--still");
@@ -64,9 +64,7 @@ async function app(cap) {
   // ── then waits for you ──
   const keyboard = createKeyboard();
   const recent = [];
-  let view = "menu"; // or "projects"
   let selected = 0;
-  let picked = 0;
   let note;
   let drawn = 0;
   let tick = 0;
@@ -74,7 +72,7 @@ async function app(cap) {
   let timer;
 
   const paintArea = () => {
-    const lines = view === "menu" ? menuLines(profile.actions, selected, cap, note) : projectLines(profile.projects, picked, cap);
+    const lines = menuLines(profile.actions, selected, cap, note);
     if (drawn > 1) out.write(`\x1b[${drawn - 1}A`);
     out.write(`\r${lines.map((line) => `\x1b[2K${show(line, cap)}`).join("\n")}\x1b[J`);
     drawn = lines.length;
@@ -106,13 +104,10 @@ async function app(cap) {
 
   const choose = (action) => {
     if (action.run === "game") return play();
-    if (action.run === "projects") view = "projects";
-    else {
-      openUrl(action.url);
-      // the address is always shown: on a server there is no browser to open
-      note = [s("Opening ", { c: "green" }), s(action.url.replace(/^mailto:/, ""), { c: "blue", link: action.url })];
-      if (action.copy && copyText(action.copy)) note.push(s("  (copied to your clipboard too)", { c: "green" }));
-    }
+    openUrl(action.url);
+    // the address is always shown: on a server there is no browser to open
+    note = [s("Opening ", { c: "green" }), s(action.url.replace(/^mailto:/, ""), { c: "blue", link: action.url })];
+    if (action.copy && copyText(action.copy)) note.push(s("  (copied to your clipboard too)", { c: "green" }));
     paintArea();
   };
 
@@ -126,17 +121,6 @@ async function app(cap) {
       return play(); // the old way in still works
     }
     if (key === "ctrl-c") return quit();
-
-    if (view === "projects") {
-      const count = profile.projects.length;
-      if (key === "up") picked = (picked + count - 1) % count;
-      else if (key === "down" || key === "tab") picked = (picked + 1) % count;
-      else if (key === "return" || key === "space") openUrl(profile.projects[picked].url);
-      else if (key === "left" || key === "escape" || key === "backspace" || key === "q") view = "menu";
-      else return;
-      note = undefined;
-      return paintArea();
-    }
 
     if (["up", "down", "left", "right", "tab"].includes(key)) {
       selected = moveSelection(selected, key, profile.actions.length);
@@ -164,9 +148,9 @@ async function main() {
   if (has("--help", "-h")) return void out.write(help);
   if (has("--version", "-v")) return void out.write(`${pkg.version}\n`);
   if (has("--json")) {
-    const { name, title, place, pitch, facts, building, projects } = profile;
+    const { name, title, place, pitch, facts, building } = profile;
     const links = Object.fromEntries(facts.map(([label, shown, link]) => [label, link || shown]));
-    return void out.write(`${JSON.stringify({ name, title, place, pitch, links, building, projects, card: `npx ${pkg.name}` }, null, 2)}\n`);
+    return void out.write(`${JSON.stringify({ name, title, place, pitch, links, building, card: `npx ${pkg.name}` }, null, 2)}\n`);
   }
 
   const cap = detect(argv);

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { LANES, PACKET_POINTS, SHIP, SHIP_X, delay, frame, move, newGame, step, verdict } from "../lib/game.js";
 import { profile } from "../lib/profile.js";
-import { KONAMI, OUTER, cardLines, compactLines, isKonami, liveCard, menuLines, moveSelection, projectLines, wipe, wrap } from "../lib/render.js";
+import { KONAMI, OUTER, cardLines, compactLines, isKonami, liveCard, menuLines, moveSelection, wipe, wrap } from "../lib/render.js";
 import { clip, lineWidth, toAnsi } from "../lib/term.js";
 import { fly } from "../scripts/pilot.js";
 
@@ -30,7 +30,7 @@ test("the boxed card is a clean rectangle that fits 80 columns", () => {
 });
 
 test("the plain version uses nothing but ASCII", () => {
-  const lines = [...cardLines(profile, plain), ...compactLines(profile, plain), ...menuLines(profile.actions, 0, plain), ...projectLines(profile.projects, 0, plain)];
+  const lines = [...cardLines(profile, plain), ...compactLines(profile, plain), ...menuLines(profile.actions, 0, plain)];
   for (const line of lines) assert.ok(isAscii(toAnsi(line, plain)), toAnsi(line, plain));
   for (const phase of ["ready", "run", "over"]) {
     for (const line of frame(newGame(1), plain, { phase })) assert.ok(isAscii(toAnsi(line, plain)));
@@ -66,13 +66,6 @@ test("arrows move around the two columns", () => {
   assert.equal(moveSelection(7, "tab", count), 0);
   assert.equal(moveSelection(3, "right", 7), 6, "an odd menu has a shorter right column");
   assert.equal(moveSelection(2, "x", count), 2);
-});
-
-test("the list of projects fits the card and shows where the selected one lives", () => {
-  const lines = projectLines(profile.projects, 2, fancy);
-  assert.equal(lines.length, profile.projects.length + 2);
-  for (const line of lines) assert.ok(lineWidth(line) <= OUTER + 2, toAnsi(line, plain));
-  assert.ok(toAnsi(lines.at(-1), plain).includes("im.center"));
 });
 
 test("the animations never change the shape of the card", () => {

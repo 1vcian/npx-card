@@ -16,8 +16,7 @@ It makes no network requests either. A link opens only when you pick it.
 ## What's in it
 
 - **The card.** Who I am, what I'm making, where to find me. It wipes in, a comet keeps running around its frame and the logo catches the light now and then.
-- **A menu.** Website, résumé, GitHub, LinkedIn, and an email entry that also copies the address. Move with the arrows, choose with enter.
-- **My projects.** A list you can browse without leaving the terminal; enter opens the one you picked.
+- **A menu.** Website, projects, résumé, GitHub, LinkedIn, and an email entry that also copies the address. Move with the arrows, choose with enter.
 - **A game.** ORBIT RUN, right there in the menu.
 - **Good manners.** Colours adapt to the terminal (true colour, 256, 16, or none), `NO_COLOR` is respected, piped output is plain text, narrow windows get a compact layout, and `--still` turns the animations off.
 
@@ -53,7 +52,7 @@ Needs Node.js 18 or newer.
 It is MIT licensed and everything personal sits in one file, so take it.
 
 1. Fork or clone this repo.
-2. Edit [`lib/profile.js`](lib/profile.js): name, links, menu, projects, even the logo.
+2. Edit [`lib/profile.js`](lib/profile.js): name, links, menu, even the logo.
 3. In `package.json`, change `name` (it is what people will type after `npx`), `bin`, `author` and the URLs, and reset `version`.
 4. Try it with `node card.js`, check it with `npm test`.
 5. Redraw the pictures in this README with `npm run preview`.
@@ -63,7 +62,7 @@ It is MIT licensed and everything personal sits in one file, so take it.
 
 | file | what it does |
 | --- | --- |
-| [`card.js`](card.js) | the command: options, the menu, the list of projects, the way into the game |
+| [`card.js`](card.js) | the command: options, the menu, the way into the game |
 | [`lib/profile.js`](lib/profile.js) | the content |
 | [`lib/render.js`](lib/render.js) | lays out the card and the menu, and animates them |
 | [`lib/term.js`](lib/term.js) | what the terminal can do: colour depth, the box, keys, links, the clipboard |
